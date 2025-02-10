@@ -16,7 +16,7 @@ plt.rcParams['mathtext.bf'] = 'serif:bold'
 plt.rcParams['mathtext.fontset'] = 'custom'
 
 
-# high res
+# high res, switch to 1000
 plt.rcParams['figure.dpi'] = 100 #default 100
 
 # data loading functions 
