@@ -61,13 +61,8 @@ def copypaste():
     return df
 
 def plotarray(filename):
-    intm = pd.DataFrame(filename).to_numpy() #intm[row/no. of datapts][col/no. of var.]
-    x,rows,cols = [], len(intm), len(np.transpose(intm))
-    for i in range(cols):
-        x.append([])
-        for j in range(rows):
-            x[i].append(intm[j][i]) # to create a list of all values in each col
-    return x
+    intm = np.array(filename)
+    return [intm[:, i] for i in range(intm.shape[1])]
 
 def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Ensure xdata and ydata are numpy arrays
@@ -317,3 +312,20 @@ def uvvisplot(filename, fit = None,spectra = None):
         return
     #plt.legend()
     #plt.savefig(f'{filename}.png')
+
+def saveloadplot(filename):
+    try:
+        data = loadexcel(filename)
+        if data is None:
+            raise FileNotFoundError
+    except FileNotFoundError:
+        data = copypaste()
+
+        if data is None or data.empty:
+            print("Error: Clipboard empty. Aborting operation.")
+            return
+        
+        saveexcel(data, filename)
+        print(f'"{filename}.csv" has been created. Process the file if needed, then rerun the function.')
+
+    return plotarray(data)
