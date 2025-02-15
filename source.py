@@ -152,7 +152,6 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Plotting
     plt.plot(xdata, y_fitted, 'g-', label='Fitted Curve')
     plt.legend()
-    plt.show()
 
 def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None, colour = None):
     
