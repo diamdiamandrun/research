@@ -16,7 +16,7 @@ plt.rcParams['mathtext.bf'] = 'serif:bold'
 plt.rcParams['mathtext.fontset'] = 'custom'
 
 
-# high res, switch to 1000
+# high res
 plt.rcParams['figure.dpi'] = 100 #default 100
 
 # data loading functions 
@@ -63,3 +63,22 @@ def copypaste():
 def plotarray(filename):
     intm = np.array(filename)
     return [intm[:, i] for i in range(intm.shape[1])]
+
+#advanced functions
+
+def saveloadplot(filename):
+    try:
+        data = loadexcel(filename)
+        if data is None:
+            raise FileNotFoundError
+    except FileNotFoundError:
+        data = copypaste()
+
+        if data is None or data.empty:
+            print("Error: Clipboard empty. Aborting operation.")
+            return
+        
+        saveexcel(data, filename)
+        print(f'"{filename}.csv" has been created. Process the file if needed, then rerun the function.')
+
+    return plotarray(data)
