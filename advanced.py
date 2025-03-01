@@ -6,6 +6,9 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Define fitting functions
     def linear(x, a, b):
         return a * x + b
+    
+    def lin0(x,a):
+        return a*x
 
     def norm_linear(x, a):
         return a * x + 1
@@ -31,9 +34,10 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     def polynomial(x, *coeffs):
         return np.polyval(coeffs, x)
 
-    # Dictionary mapping fit types to functions
+    # dictionary mapping
     fit_functions = {
         'lin': (linear, 'y = {:.2f}x + {:.2f}'),
+        'lin0': (lin0, 'y={:.2f}x'),
         'linnorm': (norm_linear, 'y = {:.2f}x + 1'),
         '0linnorm': (zeroed_norm_linear, 'y = {:.2f}x'),
         'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'),
@@ -43,14 +47,14 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
         'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')
     }
 
-    # Handle polynomial separately
+    # polynomial special treatment
     if fit_type == 'poly':
         o = int(input('Please insert order of polynomial fit: '))
         coeff = np.polyfit(xdata, ydata, o)
         fitted_func = polynomial
         eqn = 'y = ' + ' + '.join(f'{p:.2f}x^{i}' for i, p in enumerate(coeff[::-1]))
 
-        # Compute R^2 for polynomial
+        # R^2
         y_fitted = np.polyval(coeff, xdata)
         SS_res = np.sum((ydata - y_fitted) ** 2)
         SS_tot = np.sum((ydata - np.mean(ydata)) ** 2)
@@ -62,11 +66,15 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
         fitted_func = func
         eqn = eqn_template.format(*coeff)
 
-        # Compute R^2 for other fit types
+        # R^2 in general
         y_fitted = fitted_func(xdata, *coeff)
         SS_res = np.sum((ydata - y_fitted) ** 2)
         SS_tot = np.sum((ydata - np.mean(ydata)) ** 2)
         R_squared = 1 - (SS_res / SS_tot)
+
+        if '0' in fit_type:
+            xdata = np.append([0],xdata)
+            y_fitted = np.append([0],y_fitted)
 
         if fit_type == 'gaussian':  # XRD signal fitting
             print(f'------------------XRD Maxima for \u03BC = {coeff[1]:.2f}\u00B0, \u03C3 = {coeff[2]:.2f}\u00B0------------------')
@@ -86,6 +94,7 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Plotting
     plt.plot(xdata, y_fitted, 'g-', label='Fitted Curve')
     plt.legend()
+
 
 def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None, colour = None):
     
@@ -245,23 +254,6 @@ def uvvisplot(filename, fit = None,spectra = None):
         return
     #plt.legend()
     #plt.savefig(f'{filename}.png')
-
-def saveloadplot(filename):
-    try:
-        data = loadexcel(filename)
-        if data is None:
-            raise FileNotFoundError
-    except FileNotFoundError:
-        data = copypaste()
-
-        if data is None or data.empty:
-            print("Error: Clipboard empty. Aborting operation.")
-            return
-        
-        saveexcel(data, filename)
-        print(f'"{filename}.csv" has been created. Process the file if needed, then rerun the function.')
-
-    return plotarray(data)
 
 def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None):
     
@@ -519,3 +511,101 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
             os.makedirs('00_Plots')
         plt.savefig(f'00_Plots/{filename}.{saveformat}', bbox_inches='tight')
         print(f"Plot saved as {filename}.{saveformat} in 00_Plots")
+
+
+def HOMA(folderpath=None, filename=None, analysis=None, correction=None):
+    
+    if analysis not in (99, "manual"):
+        # Check if the folder exists
+        if not os.path.exists(folderpath):
+            print(f"The folder '{folderpath}' does not exist.")
+            return
+
+        filepath = os.path.join(folderpath, filename)
+
+        try:
+            ds = loadexcel(filepath)
+            if ds is None:
+                raise FileNotFoundError
+        except FileNotFoundError:
+            ds = copypaste()
+            saveexcel(ds, filepath)
+            print(f'"{filename}.csv" has been created in {filepath}. Process file in Excel and rerun the function.')
+            return
+        
+        if analysis == 'local' or analysis == 0:
+            # process all carbons with bond data
+            carbonds = pd.DataFrame(ds[(ds['Symbol'] == 'C') & (ds['Highlight'] == 'Yes')])
+            carbonds = carbonds[['Tag', 'X', 'Y', 'Z', 'Bond']].reset_index(drop=True)
+
+            # identify carbons with NaN bond values
+            nan_bonds = carbonds[carbonds['Bond'].isna()]
+            inferred_bond_lengths = []
+
+            # calculate bond length only for carbons with NaN bond values
+            if correction == None:
+                for index, row in nan_bonds.iterrows():
+                    x1, y1, z1 = row[['X', 'Y', 'Z']]
+                    for i, other_row in carbonds.iterrows():
+                        if i != index:  # skip self-comparison
+                            x2, y2, z2 = other_row[['X', 'Y', 'Z']]
+                            distance = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+
+                            # include bond only if it falls within the bonding range
+                            if 1.2 <= distance <= 1.6:
+                                inferred_bond_lengths.append(distance)
+            elif correction is not None:
+                x1, y1, z1 = nan_bonds.iloc[0][['X', 'Y', 'Z']]
+                connecting_carbon = carbonds[carbonds['Tag'] == correction]
+                
+                if connecting_carbon.empty:
+                    raise ValueError(f"Connecting carbon with tag '{correction}' not found in carbonds.")
+
+                x2, y2, z2 = connecting_carbon.iloc[0][['X', 'Y', 'Z']]
+                distance = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+                #print(distance)
+                inferred_bond_lengths.append(distance)
+                
+            # combine explicitly listed bonds with inferred ones
+            explicit_bonds = carbonds['Bond'].dropna().to_numpy()
+            all_bonds = np.unique(np.concatenate((explicit_bonds, np.array(inferred_bond_lengths))))
+
+            # Perform HOMA calculation
+            if 's1' in filename or 't1' in filename:
+                alpha, Ropt, n = 950.74, 1.437, len(all_bonds)
+                #print("All bond distances (explicit + inferred):", all_bonds)
+                HOMERval = 1 - (alpha / n) * np.sum((all_bonds - Ropt) ** 2)
+                print(f"HOMER value for excited-state {n}-\u03C0 conjugated {filename} is {HOMERval:.3f}")
+            else:
+                alpha, Ropt, n = 153.37, 1.392, len(all_bonds)
+                #print("All bond distances (explicit + inferred):", all_bonds)
+                HOMAval = 1 - (alpha / n) * np.sum((all_bonds - Ropt) ** 2)
+                print(f"HOMAc value for groundstate {n}-\u03C0 conjugated {filename} is {HOMAval:.3f}")
+
+        elif analysis == 'multiwfn' or analysis == 1:
+            carbonds = pd.DataFrame(ds[(ds['Highlight'] == 'Yes') & (ds['Symbol'] == 'C')])
+            carbonlist = carbonds['Tag'].to_numpy()
+            output = ', '.join(map(str, carbonlist))
+            print(output)
+
+    elif analysis == 'manual' or analysis == 99:
+        
+        if correction is None:
+            raise ValueError('Please provide bondlist in a list under argument "correction".')
+        
+        bondlist = np.array(correction, dtype=float)
+
+        if 's1' in filename or 't1' in filename:
+            alpha, Ropt, n = 950.74, 1.437, len(bondlist)
+            HOMERval = 1 - (alpha / n) * np.sum((bondlist - Ropt) ** 2)
+            print(f"HOMER value for excited-state {n}-\u03C0 conjugated {filename} is {HOMERval:.3f}")
+        else:
+            alpha, Ropt, n = 153.37, 1.392, len(bondlist)
+            HOMAval = 1 - (alpha / n) * np.sum((bondlist - Ropt) ** 2)
+            print(f"HOMAc value for groundstate {n}-\u03C0 conjugated {filename} is {HOMAval:.3f}")
+
+
+    else:
+        print(f'This mode of analysis is not supported as of {os.times()}.')
+
+    print('The parameterised values used in calculation were obtained with gratitude from Enrique and Bo, Phys. Chem. Chem. Phys., 2023, 25, 16763–16771')
