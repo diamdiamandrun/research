@@ -6,46 +6,26 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Define fitting functions
     def linear(x, a, b):
         return a * x + b
-    
     def lin0(x,a):
         return a*x
-
     def norm_linear(x, a):
         return a * x + 1
-
     def zeroed_norm_linear(x, a):
         return a * x
-
     def exponential(x, a, b, c):
         return a * np.exp(c * x) + b
-
     def norm_exponential(x, a):
         return np.exp(a * x)
-
     def zeroed_norm_exponential(x, a):
         return np.exp(a * x) - 1
-
     def sinusoidal(x, a, b, c, d):
         return a * np.sin(b * x) + c * np.cos(d * x)
-
     def gaussian(x, a, b, c, d):
         return a * np.exp(-(x - b) ** 2 / (2 * c ** 2)) + d
-
     def polynomial(x, *coeffs):
         return np.polyval(coeffs, x)
-
     # dictionary mapping
-    fit_functions = {
-        'lin': (linear, 'y = {:.2f}x + {:.2f}'),
-        'lin0': (lin0, 'y={:.2f}x'),
-        'linnorm': (norm_linear, 'y = {:.2f}x + 1'),
-        '0linnorm': (zeroed_norm_linear, 'y = {:.2f}x'),
-        'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'),
-        'expnorm': (norm_exponential, 'y = exp({:.2f}x)'),
-        '0expnorm': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'),
-        'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'),
-        'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')
-    }
+    fit_functions = {'lin': (linear, 'y = {:.2f}x + {:.2f}'), 'lin0': (lin0, 'y={:.2f}x'), 'linnorm': (norm_linear, 'y = {:.2f}x + 1'), '0linnorm': (zeroed_norm_linear, 'y = {:.2f}x'), 'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'), 'expnorm': (norm_exponential, 'y = exp({:.2f}x)'), '0expnorm': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'), 'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'), 'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')}
 
     # polynomial special treatment
     if fit_type == 'poly':
@@ -53,51 +33,44 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
         coeff = np.polyfit(xdata, ydata, o)
         fitted_func = polynomial
         eqn = 'y = ' + ' + '.join(f'{p:.2f}x^{i}' for i, p in enumerate(coeff[::-1]))
-
         # R^2
         y_fitted = np.polyval(coeff, xdata)
         SS_res = np.sum((ydata - y_fitted) ** 2)
         SS_tot = np.sum((ydata - np.mean(ydata)) ** 2)
         R_squared = 1 - (SS_res / SS_tot)
-
+        
     elif fit_type in fit_functions:
         func, eqn_template = fit_functions[fit_type]
         coeff, covar = curve_fit(func, xdata, ydata, p0=initial_guess, maxfev=10000)
         fitted_func = func
         eqn = eqn_template.format(*coeff)
-
         # R^2 in general
         y_fitted = fitted_func(xdata, *coeff)
         SS_res = np.sum((ydata - y_fitted) ** 2)
         SS_tot = np.sum((ydata - np.mean(ydata)) ** 2)
         R_squared = 1 - (SS_res / SS_tot)
-
+        
         if '0' in fit_type:
             xdata = np.append([0],xdata)
             y_fitted = np.append([0],y_fitted)
-
         if fit_type == 'gaussian':  # XRD signal fitting
             print(f'------------------XRD Maxima for \u03BC = {coeff[1]:.2f}\u00B0, \u03C3 = {coeff[2]:.2f}\u00B0------------------')
             print('Fitted parameters:', coeff)
             print('Fitted equation:', eqn)
-
     else:
         raise ValueError('Invalid fit_type. Expected one of: ' + ', '.join(fit_functions.keys()) + ', or "poly".')
-
-    # Print results
+    
     print('Fitted parameters:', coeff)
     print('Fitted equation:', eqn)
     print(f'R^2: {R_squared:.4f}')
     if fit_type != 'poly':
         print('Covariance Matrix:', covar)
 
-    # Plotting
     plt.plot(xdata, y_fitted, 'g-', label='Fitted Curve')
     plt.legend()
 
 
 def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None, colour = None):
-    
     if debye_fit == None and NP_name != None: # import
         xrddata = copypaste()
         if xrddata is not None:
@@ -111,18 +84,14 @@ def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None,
             saveexcel(xrddata, f'{NP_name}_xrd')
         else:
             return None
-        
     
     elif debye_fit != None: # standard display and/or gaussian fit
-        
         xrddata = loadexcel(filename)
         xrd = plotarray(xrddata)
         
         if colour == None:
             colour = 'r'
-        
         if isinstance(debye_fit,(int,float)) and debye_fit != 0:
-        
             # first isolating the n maximas
             n = int(debye_fit)
             from scipy.signal import argrelextrema
@@ -139,7 +108,7 @@ def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None,
                 for j in range(extremaindices[i]-100*fitspread,extremaindices[i]+100*fitspread):
                     xrdzoom[0].append(xrd[0][j])
                     xrdzoom[1].append(xrd[1][j])
-            
+                    
                 plt.figure(figsize=(6.4,4.8))
                 #plt.subplot(1,2,2)
                 tallest=[[],[]]
@@ -152,12 +121,10 @@ def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None,
                 p0 = [a_init, b_init, c_init, d_init] # to enable gaussian fit
                 curvefit(xrdzoom[0], xrdzoom[1], 'gaussian',initial_guess = p0)
                 plt.tight_layout()
-        
+                
             #plt.figure(figsize=(12.8,4.8))
             plt.figure(figsize=(6.4,4.8))
-            
             # main/first plot
-            #plt.subplot(1,2,1)
             plt.plot(xrd[0],xrd[1], '-', color = f"{colour}", label = f"{NP_name}")
             plt.xlabel('Detector Angle, 2$\\theta$ ($^o$)')
             plt.ylabel('Counts (a.u.)')
@@ -181,7 +148,6 @@ def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None,
         return None
 
 def debye(mu,dmu,sigma,dsigma,em):
-
     # first defining lambda
     if em == 'CuKa':
         Lambda = 1.541862 * 10**(-10) # Cu K\alpha
@@ -256,7 +222,6 @@ def uvvisplot(filename, fit = None,spectra = None):
     #plt.savefig(f'{filename}.png')
 
 def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None):
-    
     # Set default color if not provided
     if colour is None:
         colour = 'b'
@@ -603,7 +568,6 @@ def HOMA(folderpath=None, filename=None, analysis=None, correction=None):
             alpha, Ropt, n = 153.37, 1.392, len(bondlist)
             HOMAval = 1 - (alpha / n) * np.sum((bondlist - Ropt) ** 2)
             print(f"HOMAc value for groundstate {n}-\u03C0 conjugated {filename} is {HOMAval:.3f}")
-
 
     else:
         print(f'This mode of analysis is not supported as of {os.times()}.')
