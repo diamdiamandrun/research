@@ -1,3 +1,24 @@
+# import packages
+import pandas as pd
+import numpy as np
+from scipy.optimize import curve_fit
+import matplotlib.pyplot as plt
+import os
+
+# Set all text elements to use 'Times New Roman' as the font
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
+
+# Set math text to use 'Times New Roman'
+plt.rcParams['mathtext.rm'] = 'serif'
+plt.rcParams['mathtext.it'] = 'serif:italic'
+plt.rcParams['mathtext.bf'] = 'serif:bold'
+plt.rcParams['mathtext.fontset'] = 'custom'
+
+
+# high res
+plt.rcParams['figure.dpi'] = 100 #default 100
+
 def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Ensure xdata and ydata are numpy arrays
     xdata = np.asarray(xdata, dtype=float)
