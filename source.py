@@ -95,8 +95,8 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
         return a * x + b
     def lin0(x,a):
         return a*x
-    def norm_linear(x, a):
-        return a * x + 1
+    def log(x,a,b,c):
+        return a*np.log(b*x)+c
     def zeroed_norm_linear(x, a):
         return a * x
     def exponential(x, a, b, c):
@@ -112,7 +112,7 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     def polynomial(x, *coeffs):
         return np.polyval(coeffs, x)
     # dictionary mapping
-    fit_functions = {'lin': (linear, 'y = {:.2f}x + {:.2f}'), 'lin0': (lin0, 'y={:.2f}x'), 'linnorm': (norm_linear, 'y = {:.2f}x + 1'), '0linnorm': (zeroed_norm_linear, 'y = {:.2f}x'), 'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'), 'expnorm': (norm_exponential, 'y = exp({:.2f}x)'), '0expnorm': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'), 'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'), 'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')}
+    fit_functions = {'lin': (linear, 'y = {:.2f}x + {:.2f}'), 'lin0': (lin0, 'y={:.2f}x'), 'linnorm': (norm_linear, 'y = {:.2f}x + 1'), 'log': (log, 'y = {:.2f} log({:.2f} {:.2f}x) + {:.2f}'), 'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'), 'expnorm': (norm_exponential, 'y = exp({:.2f}x)'), '0expnorm': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'), 'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'), 'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')}
 
     # polynomial special treatment
     if fit_type == 'poly':
