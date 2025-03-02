@@ -93,66 +93,88 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Define fitting functions
     def linear(x, a, b):
         return a * x + b
-    def lin0(x,a):
-        return a*x
-    def log(x,a,b,c):
-        return a*np.log(b*x)+c
+
+    def norm_linear(x, a):
+        return a * x + 1
+
     def zeroed_norm_linear(x, a):
         return a * x
+    
+    def logarithm(x, a, b, c):
+        return a * np.log(b*x)+c
+
     def exponential(x, a, b, c):
         return a * np.exp(c * x) + b
+
     def norm_exponential(x, a):
         return np.exp(a * x)
+
     def zeroed_norm_exponential(x, a):
         return np.exp(a * x) - 1
+
     def sinusoidal(x, a, b, c, d):
         return a * np.sin(b * x) + c * np.cos(d * x)
+
     def gaussian(x, a, b, c, d):
         return a * np.exp(-(x - b) ** 2 / (2 * c ** 2)) + d
+
     def polynomial(x, *coeffs):
         return np.polyval(coeffs, x)
-    # dictionary mapping
-    fit_functions = {'lin': (linear, 'y = {:.2f}x + {:.2f}'), 'lin0': (lin0, 'y={:.2f}x'), 'linnorm': (norm_linear, 'y = {:.2f}x + 1'), 'log': (log, 'y = {:.2f} log({:.2f} {:.2f}x) + {:.2f}'), 'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'), 'expnorm': (norm_exponential, 'y = exp({:.2f}x)'), '0expnorm': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'), 'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'), 'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')}
 
-    # polynomial special treatment
+    # Dictionary mapping fit types to functions
+    fit_functions = {
+        'lin': (linear, 'y = {:.2f}x + {:.2f}'),
+        'linnorm': (norm_linear, 'y = {:.2f}x + 1'),
+        'lin0': (zeroed_norm_linear, 'y = {:.2f}x'),
+        'log': (logarithm, 'y = {:.2f} log({:.2f}x) + {:.2f}'),
+        'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'),
+        'expnorm': (norm_exponential, 'y = exp({:.2f}x)'),
+        '0expnorm': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'),
+        'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'),
+        'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')
+    }
+
+    # Handle polynomial separately
     if fit_type == 'poly':
         o = int(input('Please insert order of polynomial fit: '))
         coeff = np.polyfit(xdata, ydata, o)
         fitted_func = polynomial
         eqn = 'y = ' + ' + '.join(f'{p:.2f}x^{i}' for i, p in enumerate(coeff[::-1]))
-        # R^2
+
+        # Compute R^2 for polynomial
         y_fitted = np.polyval(coeff, xdata)
         SS_res = np.sum((ydata - y_fitted) ** 2)
         SS_tot = np.sum((ydata - np.mean(ydata)) ** 2)
         R_squared = 1 - (SS_res / SS_tot)
-        
+
     elif fit_type in fit_functions:
         func, eqn_template = fit_functions[fit_type]
         coeff, covar = curve_fit(func, xdata, ydata, p0=initial_guess, maxfev=10000)
         fitted_func = func
         eqn = eqn_template.format(*coeff)
-        # R^2 in general
+
+        # Compute R^2 for other fit types
         y_fitted = fitted_func(xdata, *coeff)
         SS_res = np.sum((ydata - y_fitted) ** 2)
         SS_tot = np.sum((ydata - np.mean(ydata)) ** 2)
         R_squared = 1 - (SS_res / SS_tot)
-        
-        if '0' in fit_type:
-            xdata = np.append([0],xdata)
-            y_fitted = np.append([0],y_fitted)
+
         if fit_type == 'gaussian':  # XRD signal fitting
             print(f'------------------XRD Maxima for \u03BC = {coeff[1]:.2f}\u00B0, \u03C3 = {coeff[2]:.2f}\u00B0------------------')
             print('Fitted parameters:', coeff)
             print('Fitted equation:', eqn)
+
     else:
         raise ValueError('Invalid fit_type. Expected one of: ' + ', '.join(fit_functions.keys()) + ', or "poly".')
-    
+
+    # Print results
     print('Fitted parameters:', coeff)
     print('Fitted equation:', eqn)
     print(f'R^2: {R_squared:.4f}')
     if fit_type != 'poly':
         print('Covariance Matrix:', covar)
 
+    # Plotting
     plt.plot(xdata, y_fitted, 'g-', label='Fitted Curve')
     plt.legend()
 
