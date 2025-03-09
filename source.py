@@ -93,15 +93,12 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Define fitting functions
     def linear(x, a, b):
         return a * x + b
+    
+    def lin0(x,a):
+        return a*x
 
     def norm_linear(x, a):
         return a * x + 1
-
-    def zeroed_norm_linear(x, a):
-        return a * x
-    
-    def logarithm(x, a, b, c):
-        return a * np.log(b*x)+c
 
     def exponential(x, a, b, c):
         return a * np.exp(c * x) + b
@@ -124,9 +121,8 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Dictionary mapping fit types to functions
     fit_functions = {
         'lin': (linear, 'y = {:.2f}x + {:.2f}'),
+        'lin0': (lin0, 'y={:.2f}x'),
         'linnorm': (norm_linear, 'y = {:.2f}x + 1'),
-        'lin0': (zeroed_norm_linear, 'y = {:.2f}x'),
-        'log': (logarithm, 'y = {:.2f} log({:.2f}x) + {:.2f}'),
         'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'),
         'expnorm': (norm_exponential, 'y = exp({:.2f}x)'),
         '0expnorm': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'),
@@ -159,6 +155,10 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
         SS_tot = np.sum((ydata - np.mean(ydata)) ** 2)
         R_squared = 1 - (SS_res / SS_tot)
 
+        if '0' in fit_type:
+            xdata = np.append([0],xdata)
+            y_fitted = np.append([0],y_fitted)
+
         if fit_type == 'gaussian':  # XRD signal fitting
             print(f'------------------XRD Maxima for \u03BC = {coeff[1]:.2f}\u00B0, \u03C3 = {coeff[2]:.2f}\u00B0------------------')
             print('Fitted parameters:', coeff)
@@ -177,7 +177,6 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     # Plotting
     plt.plot(xdata, y_fitted, 'g-', label='Fitted Curve')
     plt.legend()
-
 
 def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None, colour = None):
     if debye_fit == None and NP_name != None: # import
