@@ -331,7 +331,7 @@ def uvvisplot(filename, fit = None,spectra = None, name = None, colour = None):
         i = spectra
     plt.plot(uvvis[0],uvvis[i], '-', color = f"{colour}", label = f"{name}")
     plt.title(f"UV-vis Spectra of {name}")
-    plt.xlabel('Wavelength, (nm)')
+    plt.xlabel('Wavelength, $\lambda$ (nm)')
     plt.ylabel('Absorbance (a.u.)')
     if fit == True:
         curvefit(uvvis[0], uvvis[1], 'poly')
