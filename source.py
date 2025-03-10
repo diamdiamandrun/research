@@ -323,20 +323,29 @@ def uvvisplot(filename, fit = None,spectra = None, name = None, colour = None):
         return
     
     uvvis = plotarray(uvvisdata)
+
     if colour == None:
         colour = 'b'
+    
+    if plt.rcParams['figure.dpi'] == 1000:
+        size = 15 
+    else:
+        size = None
+    
     if spectra == None:
         i = 1
     else:
         i = spectra
     plt.plot(uvvis[0],uvvis[i], '-', color = f"{colour}", label = f"{name}")
-    plt.title(f"UV-vis Spectra of {name}")
-    plt.xlabel('Wavelength, $\lambda$ (nm)')
-    plt.ylabel('Absorbance (a.u.)')
+    #plt.title(f"UV-vis Spectra of {name}")
+    plt.xlabel('Wavelength, $\lambda$ (nm)',fontsize=size)
+    plt.ylabel('Absorbance (a.u.)',fontsize=size)
+    
     if fit == True:
         curvefit(uvvis[0], uvvis[1], 'poly')
     else:
         return
+    plt.legend(fontsize=size)
 
 def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None):
     # Set default color if not provided
