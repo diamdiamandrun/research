@@ -320,7 +320,7 @@ def uvvisplot(filename, fit = None,spectra = None, name = None, colour = None):
         n = 1
     else:
         n = spectra
-    plt.plot(uvvis[0],uvvis[n], '-', color = f"{colour}", label = f"{filename}")
+    plt.plot(uvvis[0],uvvis[n], '-', color = f"{colour}", label = f"{name}")
     plt.title(f"UV-vis Spectra of {NP_name}")
     plt.xlabel('Wavelength, (nm)')
     plt.ylabel('Absorbance (a.u.)')
