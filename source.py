@@ -312,24 +312,31 @@ def ftirplot(filename):
     #plt.savefig(f'{filename}.png')
 
 def uvvisplot(filename, fit = None,spectra = None, name = None, colour = None):
-    uvvisdata = loadexcel(filename)
+    try:
+        uvvisdata = loadexcel(filename)
+        if uvvisdata is None:
+            raise FileNotFoundError
+    except FileNotFoundError:
+        uvvisdata = copypaste()
+        saveexcel(uvvisdata, f'{filename}')
+        print(f'"{filename}.csv" has been created. Process file in Excel to an Nx2 column and rerun the function.')
+        return
+    
     uvvis = plotarray(uvvisdata)
     if colour == None:
         colour = 'b'
     if spectra == None:
-        n = 1
+        i = 1
     else:
-        n = spectra
-    plt.plot(uvvis[0],uvvis[n], '-', color = f"{colour}", label = f"{name}")
-    plt.title(f"UV-vis Spectra of {NP_name}")
+        i = spectra
+    plt.plot(uvvis[0],uvvis[i], '-', color = f"{colour}", label = f"{name}")
+    plt.title(f"UV-vis Spectra of {name}")
     plt.xlabel('Wavelength, (nm)')
     plt.ylabel('Absorbance (a.u.)')
     if fit == True:
         curvefit(uvvis[0], uvvis[1], 'poly')
     else:
         return
-    #plt.legend()
-    #plt.savefig(f'{filename}.png')
 
 def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None):
     # Set default color if not provided
