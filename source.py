@@ -346,7 +346,7 @@ def uvvisplot(filename, fit = None,spectra = None, name = None, colour = None):
     else:
         return
     plt.legend(fontsize=size)
-
+    
 def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None):
     # Set default color if not provided
     if colour is None:
