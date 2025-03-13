@@ -109,8 +109,8 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     def zeroed_norm_exponential(x, a):
         return np.exp(a * x) - 1
 
-    def log(x,a,b):
-        return np.log(a*x)+b
+    def log(x,a,b,c):
+        return a*np.log(b*x)+c
         
     def sinusoidal(x, a, b, c, d):
         return a * np.sin(b * x) + c * np.cos(d * x)
@@ -129,7 +129,7 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
         'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'),
         'expnorm': (norm_exponential, 'y = exp({:.2f}x)'),
         'expnorm0': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'),
-        'log': (log, 'y = log({:.2f}x) + {:.2f}'),
+        'log': (log, 'y = {:.2f} log({:.2f}x) + {:.2f}'),
         'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'),
         'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')
     }
