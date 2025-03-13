@@ -663,7 +663,7 @@ def HOMA(folderpath=None, filename=None, analysis=None, correction=None):
                 
             # combine explicitly listed bonds with inferred ones
             explicit_bonds = carbonds['Bond'].dropna().to_numpy()
-            all_bonds = np.unique(np.concatenate((explicit_bonds, np.array(inferred_bond_lengths))))
+            all_bonds = np.concatenate((explicit_bonds, np.array(inferred_bond_lengths)))
 
             # Perform HOMA calculation
             if 's1' in filename or 't1' in filename:
