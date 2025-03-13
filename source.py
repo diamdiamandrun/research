@@ -109,6 +109,9 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     def zeroed_norm_exponential(x, a):
         return np.exp(a * x) - 1
 
+    def log(x,a,b):
+        return np.log(a*x)+b
+        
     def sinusoidal(x, a, b, c, d):
         return a * np.sin(b * x) + c * np.cos(d * x)
 
@@ -118,21 +121,22 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
     def polynomial(x, *coeffs):
         return np.polyval(coeffs, x)
 
-    # Dictionary mapping fit types to functions
+    # dictionary mapping fit types to functions
     fit_functions = {
         'lin': (linear, 'y = {:.2f}x + {:.2f}'),
         'lin0': (lin0, 'y={:.2f}x'),
         'linnorm': (norm_linear, 'y = {:.2f}x + 1'),
         'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'),
         'expnorm': (norm_exponential, 'y = exp({:.2f}x)'),
-        '0expnorm': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'),
+        'expnorm0': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'),
+        'log': (log, 'y = log({:.2f}x) + {:.2f}'),
         'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'),
         'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')
     }
 
-    # Handle polynomial separately
+    # handle polynomial separately
     if fit_type == 'poly':
-        o = int(input('Please insert order of polynomial fit: '))
+        o = int(input('Insert order of polynomial fit: '))
         coeff = np.polyfit(xdata, ydata, o)
         fitted_func = polynomial
         eqn = 'y = ' + ' + '.join(f'{p:.2f}x^{i}' for i, p in enumerate(coeff[::-1]))
@@ -149,7 +153,7 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None):
         fitted_func = func
         eqn = eqn_template.format(*coeff)
 
-        # Compute R^2 for other fit types
+        # compute R^2 for all other fit types
         y_fitted = fitted_func(xdata, *coeff)
         SS_res = np.sum((ydata - y_fitted) ** 2)
         SS_tot = np.sum((ydata - np.mean(ydata)) ** 2)
