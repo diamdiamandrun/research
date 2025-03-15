@@ -259,29 +259,36 @@ def xrdplot(debye_fit = None, fitspread = None, NP_name = None, filename = None,
         print('Either "debye_fit" or "NP_name" argument is required!')
         return None
 
-def debye(mu,dmu,sigma,dsigma,em):
+def debye(mu,dmu,sigma,dsigma,em,K=None,scale=None):
     # first defining lambda
     if em == 'CuKa':
-        Lambda = 1.541862 * 10**(-10) # Cu K\alpha
+        Lambda = 1.5418e-10 # Cu K\alpha
+    elif em == None:
+        raise ValueError('Insert blackbody emitter!')
+
+    if K == 'None':
+        K = 0.89
+    elif K == 'sphere':
+        K = 0.98
     
     # calculating the crystallite size
     if isinstance(mu and sigma and dmu and dsigma, (int,float)):
         dtheta,dbeta = (dmu/2)*np.pi/180,(dsigma*np.sqrt(8*np.log(2)))*np.pi/180
         beta = (np.pi/180) * np.sqrt(8*np.log(2)) * sigma
-        theta = (np.pi/180) * 1/2 * mu
+        theta = (np.pi/180)*(mu/2)
         D = (0.98 * Lambda) / beta * np.cos(theta)
-        dD = np.sqrt(D**2 * (dbeta**2 + (dtheta*np.sin(theta))**2))
+        dD = np.sqrt(D**2 * ((dbeta/beta)**2 + (dtheta*np.tan(theta))**2))
         #return [D,dD]
         print(f'----------Calculated Crystallite Size of {NP_name}----------')
         print(f'D = {D:} \u00B1 {dD}')
 
     elif isinstance(mu and sigma and dmu and dsigma, list):
-        dtheta_intm,dbeta_intm = [i/2 * np.pi/180 for i in dmu],[i*np.sqrt(8*np.log(2))*np.pi/180 for i in dsigma]
-        beta_intm = [(np.pi/180) * np.sqrt(8*np.log(2)) * i for i in sigma]
-        theta_intm = [(np.pi/180) * i / 2 for i in mu]
-        D_intm = [(0.98 * Lambda) / i * np.cos(j) for i,j in zip(beta_intm,theta_intm)]
+        dtheta_intm,dbeta_intm = [dmu[i]/2 * np.pi/180 for i in range(len(dmu))],[dsigma[i]*np.sqrt(8*np.log(2))*np.pi/180 for i in range(len(dsigma))]
+        beta_intm = [(np.pi/180) * np.sqrt(8*np.log(2)) * sigma[i] for i in range(len(sigma))]
+        theta_intm = [(np.pi/180) * mu[i] / 2 for i in range(len(mu))]
+        D_intm = [(0.98 * Lambda) / beta_intm[i] * np.cos(theta_intm[i]) for i in range(len(beta_intm))] # or = len(theta_intm)
         #dD = [np.sqrt(D_intm**2 * (dbeta**2 + (dtheta*np.sin(i))**2)) for i in theta]
-        dD = [np.sqrt(i**2 * (j**2 + (k*np.sin(l))**2)) for i,j,k,l in zip(D_intm,dbeta_intm,dtheta_intm,theta_intm)]
+        dD = [np.sqrt(D_intm[i]**2 * ((dbeta_intm[i]/beta_intm[i])**2 + (dtheta_intm[i]*np.sin(theta_intm[i]))**2)) for i in range(len(D_intm))] # also = len(dbeta_intm,dtheta_intm,theta_intm)
 
         D,beta,theta=[],[],[]
         for i in range(len(D_intm) and len(dD)):
@@ -297,11 +304,35 @@ def debye(mu,dmu,sigma,dsigma,em):
             theta[i].append(theta_intm[i])
             theta[i].append(dtheta_intm[i])
 
-        print(f'----------Calculated Crystallite Size of {NP_name}----------')
-        for i in range(len(D)):
-            print(f'Signal {i+1}: D = {D[i][0]*(10**9):.3f} \u00B1 {D[i][1]*(10**9):.3f} nm')
-            print(f'\u03B8 = {theta[i][0]} \u00B1 {theta[i][1]} rad')
-            print(f'\u03B2 = {beta[i][0]} \u00B1 {beta[i][1]} rad')
+        if scale in (None,'nm','nano'):
+            print(f'----------Calculated Crystallite Size of {NP_name}----------')
+            for i in range(len(D)):
+                print(f'Signal {i+1}: D = {D[i][0]*(1e9):.3f} \u00B1 {D[i][1]*(1e9):.3f} nm')
+                print(f'\u03B8 = {theta[i][0]:.4f} \u00B1 {theta[i][1]:.4f} rad')
+                print(f'\u03B2 = {beta[i][0]:.4f} \u00B1 {beta[i][1]:.4f} rad')
+        
+            Dbar,dDbar=0,0
+            for i in range(len(D)):
+                Dbar += D[i][0]
+                dDbar += D[i][1]  
+            Dbar,dDbar=Dbar/len(D),dDbar/len(D)
+            print(f'Average Crystallite Size = {Dbar*1e9:.3f} \u00B1 {dDbar*1e9:.3f} nm')
+    
+        elif scale in ('AA','Ang','ang','Angstrom','Angstrom'):
+            print(f'----------Calculated Crystallite Size of {NP_name}----------')
+            for i in range(len(D)):
+                print(f'Signal {i+1}: D = {D[i][0]*(1e10):.3f} \u00B1 {D[i][1]*(1e10):.3f} Å')
+                print(f'\u03B8 = {theta[i][0]:.4f} \u00B1 {theta[i][1]:.4f} rad')
+                print(f'\u03B2 = {beta[i][0]:.4f} \u00B1 {beta[i][1]:.4f} rad')
+        
+            Dbar,dDbar=0,0
+            for i in range(len(D)):
+                Dbar += D[i][0]
+                dDbar += D[i][1]  
+            Dbar,dDbar=Dbar/len(D),dDbar/len(D)
+            print('-----------------------------------------------------------------')
+            print(f'---------Average Crystallite Size = {Dbar*1e10:.3f} \u00B1 {dDbar*1e10:.3f} Å-----------')
+            print('-----------------------------------------------------------------')
 
 def ftirplot(filename):
     ftirdata = loadexcel(filename)
