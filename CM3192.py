@@ -1,6 +1,6 @@
 # Used in CM3192
 
-def debye(mu,dmu,sigma,dsigma,em,K=None,error=None,scale=None):
+def debye(mu,dmu,sigma,dsigma,em,K=None,error=None,scale=None,NP_name='None'):
     # first defining lambda
     if em == 'CuKa':
         Lambda = 1.5418e-10 # Cu K\alpha
