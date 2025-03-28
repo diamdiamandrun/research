@@ -4,9 +4,9 @@ authors:
   - family-names: Han
     given-names: Kang Ding
     orcid: https://orcid.org/0009-0001-6609-0737
-title: "Research Code"
+title: "Data Analysis for Research"
 version: 1.0.0
 identifiers:
   - type: doi
     value: 10.5072/zenodo.191756
-date-released: 2025-01-01
+date-released: 2025-03-29
