@@ -2,9 +2,9 @@
 import pandas as pd
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.interpolate import UnivariateSpline
 import matplotlib.pyplot as plt
 import os
-
 # Set all text elements to use 'Times New Roman' as the font
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
@@ -14,6 +14,34 @@ plt.rcParams['mathtext.rm'] = 'serif'
 plt.rcParams['mathtext.it'] = 'serif:italic'
 plt.rcParams['mathtext.bf'] = 'serif:bold'
 plt.rcParams['mathtext.fontset'] = 'custom'
+
+# colour to integer mapping, try color=css[i] or for local functions, colour=css[colour]
+css= ['Black', 'Blue', 'BlueViolet',
+    'Brown', 'CadetBlue', 'Chocolate', 'Coral',
+    'CornflowerBlue', 'Cornsilk', 'Crimson', 'Cyan', 'DarkBlue', 'DarkCyan',
+    'DarkGoldenRod', 'DarkGray', 'DarkGreen', 'DarkKhaki', 'DarkMagenta',
+    'DarkOliveGreen', 'DarkOrange', 'DarkOrchid', 'DarkRed', 'DarkSalmon',
+    'DarkSeaGreen', 'DarkSlateBlue', 'DarkSlateGray', 'DarkTurquoise',
+    'DarkViolet', 'DeepPink', 'DeepSkyBlue', 'DimGray', 'DodgerBlue',
+    'FireBrick', 'FloralWhite', 'ForestGreen', 'Fuchsia', 'Gainsboro',
+    'GhostWhite', 'Gold', 'GoldenRod', 'Gray', 'Green', 'GreenYellow',
+    'HoneyDew', 'HotPink', 'IndianRed', 'Indigo', 'Ivory', 'Khaki',
+    'Lavender', 'LavenderBlush', 'LawnGreen', 'LemonChiffon', 'LightBlue',
+    'LightCoral', 'LightCyan', 'LightGoldenRodYellow', 'LightGreen',
+    'LightGray', 'LightPink', 'LightSalmon', 'LightSeaGreen', 'LightSkyBlue',
+    'LightSlateGray', 'LightSteelBlue', 'LightYellow', 'Lime', 'LimeGreen',
+    'Linen', 'Magenta', 'Maroon', 'MediumAquaMarine', 'MediumBlue',
+    'MediumOrchid', 'MediumPurple', 'MediumSeaGreen', 'MediumSlateBlue',
+    'MediumSpringGreen', 'MediumTurquoise', 'MediumVioletRed', 'MidnightBlue',
+    'MintCream', 'MistyRose', 'Moccasin', 'NavajoWhite', 'Navy', 'OldLace',
+    'Olive', 'OliveDrab', 'Orange', 'OrangeRed', 'Orchid', 'PaleGoldenRod',
+    'PaleGreen', 'PaleTurquoise', 'PaleVioletRed', 'PapayaWhip', 'PeachPuff',
+    'Peru', 'Pink', 'Plum', 'PowderBlue', 'Purple', 'RebeccaPurple', 'Red',
+    'RosyBrown', 'RoyalBlue', 'SaddleBrown', 'Salmon', 'SandyBrown', 'SeaGreen',
+    'SeaShell', 'Sienna', 'Silver', 'SkyBlue', 'SlateBlue', 'SlateGray', 'Snow',
+    'SpringGreen', 'SteelBlue', 'Tan', 'Teal', 'Thistle', 'Tomato', 'Turquoise',
+    'Violet', 'Wheat', 'White', 'WhiteSmoke', 'Yellow', 'YellowGreen'
+]
 
 
 # high res
@@ -84,8 +112,164 @@ def saveloadplot(filename):
     return plotarray(data)
 
 ## advanced functions
+def curvefit(xdata, ydata, fit_type, initial_guess=None, force_coord=None, colour=None, fitname=None, lgd=False, smooth=None):
+    xdata = np.asarray(xdata, dtype=float)
+    ydata = np.asarray(ydata, dtype=float)
+    def linear(x, a, b):
+        return a * x + b
+    def lin0(x, a):
+        return a * x
+    def norm_linear(x, a):
+        return a * x + 1
+    def exponential(x, a, b, c):
+        return a * np.exp(c * x) + b
+    def norm_exponential(x, a):
+        return np.exp(a * x)
+    def zeroed_norm_exponential(x, a):
+        return np.exp(a * x) - 1
+    def log(x, a, b):
+        return a * np.log(x) + b
+    def sinusoidal(x, a, b, c, d):
+        return a * np.sin(b * x) + c * np.cos(d * x)
+    def gaussian(x, a, b, c, d):
+        return a * np.exp(-((x - b) ** 2)/(2 * c ** 2)) + d
+    def polynomial(x, *coeffs):
+        return np.polyval(coeffs, x)
+    #dictionary
+    fit_functions = {
+        'lin': (linear, 'y = {:.2f}x + {:.2f}'),
+        'lin0': (lin0, 'y = {:.2f}x'),
+        'linnorm': (norm_linear, 'y = {:.2f}x + 1'),
+        'exp': (exponential, 'y = {:.2f}exp({:.2f}x) + {:.2f}'),
+        'expnorm': (norm_exponential, 'y = exp({:.2f}x)'),
+        'expnorm0': (zeroed_norm_exponential, 'y = exp({:.2f}x) - 1'),
+        'log': (log, 'y = {:.2f} log(x) + {:.2f}'),
+        'sinusoidal': (sinusoidal, 'y = {:.2f}sin({:.2f}x) + {:.2f}cos({:.2f}x)'),
+        'gaussian': (gaussian, 'y = {:.2f} * exp(-(x - {:.2f})^2 / (2 * {:.2f}^2)) + {:.2f}')
+    }
+    if fit_type == 'smooth': #handle smooth
+        sort_idx = np.argsort(xdata) #sort ascending
+        xdata_sorted = xdata[sort_idx]
+        ydata_sorted = ydata[sort_idx]
+        spline = UnivariateSpline(xdata_sorted, ydata_sorted, s=smooth)
+        x_smooth = np.linspace(xdata_sorted.min(), xdata_sorted.max(), 500)
+        y_smooth = spline(x_smooth)
+        y_fit = spline(xdata_sorted)
+        SS_res = np.sum((ydata_sorted - y_fit)**2)
+        SS_tot = np.sum((ydata_sorted - np.mean(ydata_sorted))**2)
+        R_squared = 1 - (SS_res/SS_tot)
+        print('Spline smoothing with smoothing factor:', smooth)
+        print(f'R²: {R_squared:.4f}')
+        if colour==None:
+            colour='45'
+        plt.plot(x_smooth, y_smooth, '-', color=css[colour], label=f'{fitname}')
+        plt.legend()
 
-def curvefit(xdata, ydata, fit_type, initial_guess=None):
+        return spline
+
+    elif fit_type == 'polyforce': #to force coordinates
+        if force_coord is None: 
+            raise ValueError('For polyforce, you must supply force_coord=[force_x, force_y].') #error handling
+        force_x = np.asarray(force_coord[0], dtype=float)
+        force_y = np.asarray(force_coord[1], dtype=float)
+        if len(force_x) != len(force_y):
+            raise ValueError('force_x and force_y must have the same number of elements.')
+        order = int(input('Insert order of polynomial fit (polyforce): '))
+        E = np.vander(force_x, N=order+1, increasing=False) #build constraint matrix w vandermonde (descending coeff)
+        f_vec = force_y
+        c_p, residuals, rank, s = np.linalg.lstsq(E, f_vec, rcond=None) # solve for E*c=f_vec
+        U, S, Vh = np.linalg.svd(E) #complete null space of E via SVD, null space dim = order + 1 - rank
+        tol = np.max(E.shape) * np.amax(S) * np.finfo(S.dtype).eps
+        ns_dim = (order+1) - rank
+        if ns_dim > 0:
+            Z = Vh[-ns_dim:].T
+        else:
+            Z = np.zeros((order+1, 0))
+        V_data = np.vander(xdata, N=order+1, increasing=False)
+        if ns_dim > 0:
+            A = V_data @ Z
+            b = ydata - V_data @ c_p
+            d, residuals_d, rank_d, s_d = np.linalg.lstsq(A, b, rcond=None)
+            coeff = c_p + Z @ d
+        else:
+            coeff = c_p
+        def poly_func(x):
+            return np.polyval(coeff, x)
+        fitted_func = poly_func
+        eqn_terms = []
+        for i, c in enumerate(coeff):
+            power = order - i
+            if power == 0:
+                term = f"{c:.2f}"
+            elif power == 1:
+                term = f"{c:.2f}x"
+            else:
+                term = f"{c:.2f}x^{power}"
+            eqn_terms.append(term)
+        eqn = "y = " + " + ".join(eqn_terms)
+        y_fitted = fitted_func(xdata)
+        SS_res = np.sum((ydata - y_fitted)**2)
+        SS_tot = np.sum((ydata - np.mean(ydata))**2)
+        R_squared = 1 - (SS_res/SS_tot)
+        covar = None
+
+    elif fit_type == 'poly':
+        o = int(input('Insert order of polynomial fit: '))
+        coeff = np.polyfit(xdata, ydata, o)
+        fitted_func = polynomial
+        eqn = 'y = ' + ' + '.join(f'{p:.2f}x^{i}' for i, p in enumerate(coeff[::-1]))
+        y_fitted = np.polyval(coeff, xdata)
+        SS_res = np.sum((ydata - y_fitted)**2)
+        SS_tot = np.sum((ydata - np.mean(ydata))**2)
+        R_squared = 1 - (SS_res/SS_tot)
+
+    elif fit_type in fit_functions:
+        func, eqn_template = fit_functions[fit_type]
+        coeff, covar = curve_fit(func, xdata, ydata, p0=initial_guess, maxfev=10000)
+        fitted_func = lambda x: func(x, *coeff)
+        eqn = eqn_template.format(*coeff)
+        y_fitted = fitted_func(xdata)
+        SS_res = np.sum((ydata - y_fitted)**2)
+        SS_tot = np.sum((ydata - np.mean(ydata))**2)
+        R_squared = 1 - (SS_res/SS_tot)
+        if '0' in fit_type:
+            xdata = np.append([0], xdata)
+            y_fitted = np.append([0], y_fitted)
+        if fit_type == 'gaussian':
+            print(f'------------------XRD Maxima for μ = {coeff[1]:.2f}°, σ = {coeff[2]:.2f}°------------------')
+            print('Fitted parameters:', coeff)
+            print('Fitted equation:', eqn)
+    else:
+        raise ValueError('Invalid fit_type. Expected one of: ' + ', '.join(list(fit_functions.keys()) + ['poly', 'polyforce', 'smooth']))
+    print('Fitted parameters:', coeff)
+    print('Fitted equation:', eqn)
+    print(f'R²: {R_squared:.4f}')
+    if fit_type not in ['poly', 'polyforce'] and fit_type in fit_functions:
+        print('Covariance Matrix:', covar)
+    if colour is None:
+        colour = 'g'
+    elif isinstance(colour, int):
+        colour = css[colour % len(css)]
+
+    #plotting
+    if lgd:
+        if fitname is None:
+            fitname = 'Fitted Curve'
+        plt.plot(xdata, y_fitted, '-', color=str(colour), label=str(fitname))
+        plt.legend()
+    else:
+        plt.plot(xdata, y_fitted, '-', color=str(colour))
+        plt.legend()
+
+    if fit_type == 'poly':
+        return coeff, R_squared
+    elif fit_type in ['polyforce'] or fit_type in fit_functions:
+        return coeff, covar, R_squared
+    else:
+        return coeff
+
+
+def curvefitold(xdata, ydata, fit_type, initial_guess=None):
     # Ensure xdata and ydata are numpy arrays
     xdata = np.asarray(xdata, dtype=float)
     ydata = np.asarray(ydata, dtype=float)
