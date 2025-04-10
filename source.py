@@ -161,7 +161,7 @@ def curvefit(xdata, ydata, fit_type, initial_guess=None, force_coord=None, colou
         print('Spline smoothing with smoothing factor:', smooth)
         print(f'R²: {R_squared:.4f}')
         if colour==None:
-            colour='45'
+            colour=45
         plt.plot(x_smooth, y_smooth, '-', color=css[colour], label=f'{fitname}')
         plt.legend()
 
