@@ -16,7 +16,7 @@ plt.rcParams['mathtext.bf'] = 'serif:bold'
 plt.rcParams['mathtext.fontset'] = 'custom'
 
 # colour to integer mapping, try color=css[i] or for local functions, colour=css[colour]
-css= ['Black', 'Blue', 'BlueViolet',
+css= ['red', 'Blue', 'green',
     'Brown', 'CadetBlue', 'Chocolate', 'Coral',
     'CornflowerBlue', 'Cornsilk', 'Crimson', 'Cyan', 'DarkBlue', 'DarkCyan',
     'DarkGoldenRod', 'DarkGray', 'DarkGreen', 'DarkKhaki', 'DarkMagenta',
@@ -40,8 +40,9 @@ css= ['Black', 'Blue', 'BlueViolet',
     'RosyBrown', 'RoyalBlue', 'SaddleBrown', 'Salmon', 'SandyBrown', 'SeaGreen',
     'SeaShell', 'Sienna', 'Silver', 'SkyBlue', 'SlateBlue', 'SlateGray', 'Snow',
     'SpringGreen', 'SteelBlue', 'Tan', 'Teal', 'Thistle', 'Tomato', 'Turquoise',
-    'Violet', 'Wheat', 'White', 'WhiteSmoke', 'Yellow', 'YellowGreen'
+    'Violet', 'YellowGreen'
 ]
+
 
 
 # high res
