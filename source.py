@@ -567,15 +567,31 @@ def uvvisplot(filename, fit = None,spectra = None, name = None, colour = None):
         return
     plt.legend(fontsize=size)
     
-def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None):
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import numpy as np
+
+def plotarray(filename):
+    intm = np.array(filename)  # Ensure it's a NumPy array
+    return [intm[:, i] for i in range(intm.shape[1])]
+
+def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None,titles=None):
+    
     # Set default color if not provided
     if colour is None:
         colour = 'b'
     
     if plt.rcParams['figure.dpi'] == 100:
         size='small'
-    elif plt.rcParams['figure.dpi']== 1000:
+    elif plt.rcParams['figure.dpi'] > 100:
         size='big'
+    
+    if size=='big':
+        font=20
+    else:
+        font=None
 
     if tdos == 'On':
         try:
@@ -614,7 +630,6 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
         fig, axes = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [2, 1]})
 
         # band structure (left plot))
-        axes[0].set_title(f'Band Structure of {material}')
         axes[0].axhline(0, color='gray', linestyle='-', linewidth=0.5)
 
         if high_symm_points is not None and isinstance(high_symm_points, list):
@@ -628,16 +643,15 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
         for i in range(1, len(band)):
             axes[0].plot(band[0], band[i], f'{colour}-', label=f'{material}')
 
-        axes[0].set_xlabel('$k$-points')
-        axes[0].set_ylabel('$E - E_F$ (eV)')
+        axes[0].set_xlabel('$k$-points',fontsize=font)
+        axes[0].set_ylabel('$E - E_F$ (eV)',fontsize=font)
         axes[0].set_xlim(min(band[0]), max(band[0]))
 
         # total DOS (right plot)
-        axes[1].set_title("Total DOS")
         axes[1].tick_params(left=False)  #hide y-axis ticks
         axes[1].set_yticks([])  #remove y-axis labels
         axes[1].plot(dos[1], dos[0], f'{colour}-')  
-        axes[1].set_xlabel('DOS (states eV$^{-1}$ cell$^{-1}$)')
+        axes[1].set_xlabel('DOS (states eV$^{-1}$ cell$^{-1}$)',fontsize=font)
         axes[1].set_xlim(0)
         axes[1].axhline(0, color='gray', linestyle='-', linewidth=0.5)
 
@@ -647,6 +661,10 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
         axes[0].set_ylim(yspan)
         axes[1].set_ylim(yspan)
         plt.tight_layout()
+        
+        if titles=='On':
+            axes[0].set_title(f'Band Structure of {material}',fontsize=font)
+            axes[1].set_title("Total DOS",fontsize=font)
 
         # turn on for bandgap analysis
         if sigma is not None:
@@ -743,8 +761,10 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
         for i in range(1, len(band)):
             plt.plot(band[0], band[i], f'{colour}-', label=f'{material}')
 
-        plt.xlabel('$k$-points')
-        plt.ylabel('$E - E_F$ (eV)')
+        if titles=='On':
+            plt.title(f'Band Structure of {material}',fontsize=font)
+        plt.xlabel('$k$-points',fontsize=font)
+        plt.ylabel('$E - E_F$ (eV)',fontsize=font)
         plt.xlim(min(band[0]), max(band[0]))
         plt.tight_layout()
 
