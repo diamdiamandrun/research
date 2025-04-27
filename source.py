@@ -573,10 +573,6 @@ import pandas as pd
 
 import numpy as np
 
-def plotarray(filename):
-    intm = np.array(filename)  # Ensure it's a NumPy array
-    return [intm[:, i] for i in range(intm.shape[1])]
-
 def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None,titles=None):
     
     # Set default color if not provided
