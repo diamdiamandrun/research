@@ -904,10 +904,10 @@ def HOMA(folderpath=None, filename=None, analysis=None, correction=None):
                 HOMERval = 1 - (alpha / n) * np.sum((all_bonds - Ropt) ** 2)
                 print(f"HOMER value for excited-state {n}-\u03C0 conjugated {filename} is {HOMERval:.3f}")
             else:
-                alpha, Ropt, n = 153.37, 1.392, len(all_bonds)
+                alpha, Ropt, n = 257.70, 1.388, len(all_bonds)
                 #print("All bond distances (explicit + inferred):", all_bonds)
                 HOMAval = 1 - (alpha / n) * np.sum((all_bonds - Ropt) ** 2)
-                print(f"HOMAc value for groundstate {n}-\u03C0 conjugated {filename} is {HOMAval:.3f}")
+                print(f"HOMA value for groundstate {n}-\u03C0 conjugated {filename} is {HOMAval:.3f}")
 
         elif analysis == 'multiwfn' or analysis == 1:
             carbonds = pd.DataFrame(ds[(ds['Highlight'] == 'Yes') & (ds['Symbol'] == 'C')])
@@ -927,12 +927,11 @@ def HOMA(folderpath=None, filename=None, analysis=None, correction=None):
             HOMERval = 1 - (alpha / n) * np.sum((bondlist - Ropt) ** 2)
             print(f"HOMER value for excited-state {n}-\u03C0 conjugated {filename} is {HOMERval:.3f}")
         else:
-            alpha, Ropt, n = 153.37, 1.392, len(bondlist)
+            alpha, Ropt, n = 257.70, 1.388, len(bondlist)
             HOMAval = 1 - (alpha / n) * np.sum((bondlist - Ropt) ** 2)
-            print(f"HOMAc value for groundstate {n}-\u03C0 conjugated {filename} is {HOMAval:.3f}")
+            print(f"HOMA value for groundstate {n}-\u03C0 conjugated {filename} is {HOMAval:.3f}")
 
     else:
         print(f'This mode of analysis is not supported as of {os.times()}.')
 
     print('The parameterised values used in calculation were obtained with gratitude from Enrique and Bo, Phys. Chem. Chem. Phys., 2023, 25, 16763–16771')
-
