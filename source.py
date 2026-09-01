@@ -948,6 +948,7 @@ def yamaguchi(mode=None,e_bs=None,e_trip=None,s2_bs=None,s2_trip=None,n_hono=Non
 
                 import numpy as np
                 # defining constants
+                h = 6.62607015e-34  # J s
                 a_0 = 5.29177210903e-11 # m
                 hbar = h/(2*np.pi)  # J s
                 e = 1.602176634e-19  # C
