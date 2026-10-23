@@ -1,13 +1,14 @@
+import numpy as np
+
 def yamaguchi(mode=None,e_bs=None,e_trip=None,s2_bs=None,s2_trip=None,n_hono=None,n_luno=None):
     "Input all energy values in Hartrees. The code automatically converts them to kcal/mol or eV."
-    if mode == None:
+    if mode is None or mode not in ("gap", "y_n"):
         print('Please input mode! Available modes include "gap" and "y_n", where n is arbitrary.')
         return
     elif "gap" in mode:
         if None not in (e_bs, e_trip, s2_bs, s2_trip):
             if s2_trip != s2_bs:
 
-                import numpy as np
                 # defining constants
                 h = 6.62607015e-34  # J s
                 a_0 = 5.29177210903e-11 # m
