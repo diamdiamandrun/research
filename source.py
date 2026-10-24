@@ -10,7 +10,7 @@ from pathlib import Path
 from io import StringIO
 import csv
 
-from loading import *
+from dataloading import *
 
 # Set all text elements to use 'Times New Roman' as the font
 plt.rcParams['font.family'] = 'serif'
