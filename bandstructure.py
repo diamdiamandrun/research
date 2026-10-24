@@ -1,7 +1,4 @@
-import os
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+from imports import *
 from dataloading import *
 
 # standard bandstructure plotting
