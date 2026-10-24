@@ -64,19 +64,103 @@ def loadexcel(filename = None):
             df = pd.read_csv(f"{filename}.csv")
         return df
 
-def saveexcel(x, filename = None):
-    if filename == None:
-        filename = input("Insert .csv filename here: ")
-        if filename.endswith(".csv"):
-            intm = x.to_csv(f'{filename}', index = False)
-        else:
-            intm = x.to_csv(f'{filename}.csv', index = False)
+
+import pandas as pd
+import datetime
+from pathlib import Path
+
+
+def saveexcel(x, filename=None, header="auto"):
+    """
+    Export a pandas DataFrame to CSV with optional
+    automatic header detection.
+
+    Parameters
+    ----------
+    x : pandas.DataFrame
+        DataFrame to export.
+
+    filename : str or Path, optional
+        Output filename. Automatically generated if None.
+
+    header : "auto", True, or False
+        "auto" : Automatically detect and correct headers.
+        True   : Preserve existing DataFrame column names.
+        False  : Export data without column names.
+
+    Returns
+    -------
+    pathlib.Path
+        Path to the exported CSV file.
+    """
+
+    # check inputs
+    if not isinstance(x, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame.")
+
+    if header not in ("auto", True, False):
+        raise ValueError(
+            "header must be 'auto', True, or False."
+        )
+
+    # generate filename
+    if filename is None:
+        timestamp = datetime.datetime.now().strftime(
+            "%Y%m%d_%H%M%S"
+        )
+        filename = f"export_{timestamp}.csv"
+
+    filename = Path(filename)
+
+    if filename.suffix.lower() != ".csv":
+        filename = filename.with_suffix(".csv")
+
+   # protect original dataframe
+    df = x.copy()
+
+    # detect pandas structure
+    has_default_columns = (
+        isinstance(df.columns, pd.RangeIndex)
+        and df.columns.equals(
+            pd.RangeIndex(df.shape[1])
+        )
+    )
+
+    #determine header behaviour
+    write_header = True
+    if header == "auto":
+        if has_default_columns:
+            # suppress default integer headers
+            write_header = False
+
+            # check first row for header
+            if len(df) >= 2:
+                row_0_numeric = pd.to_numeric(df.iloc[0], errors="coerce")
+                row_1_numeric = pd.to_numeric(df.iloc[1], errors="coerce")
+                row_0_is_text = (row_0_numeric.isna().all())
+                row_1_has_numbers = (row_1_numeric.notna().any())
+
+                if (row_0_is_text and row_1_has_numbers):
+
+                    # promote first row to column name
+                    df.columns = df.iloc[0].astype(str)
+                    # remove promoted header
+                    df = df.iloc[1:].reset_index(drop=True)
+                    write_header = True
     else:
-        if filename.endswith(".csv"):
-            intm = x.to_csv(f'{filename}', index = False)
-        else:
-            intm = x.to_csv(f'{filename}.csv', index = False)
-    return intm
+        # user input
+        write_header = header
+        
+    df.to_csv(
+        filename,
+        index=False,
+        header=write_header
+    )
+
+    print(f"Successfully exported: {filename}")
+
+    return filename
+
 
 def copypaste():
     sep = [',', ';', '|', '/','\\', r'\s+']
