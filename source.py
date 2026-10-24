@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import os
 import datetime
 from pathlib import Path
+from io import StringIO
+import csv
 
 # Set all text elements to use 'Times New Roman' as the font
 plt.rcParams['font.family'] = 'serif'
@@ -68,106 +70,56 @@ def loadexcel(filename = None):
         return df
 
 def saveexcel(x, filename=None, header="auto"):
-    """
-    Export a pandas DataFrame to CSV with optional
-    automatic header detection.
-
-    Parameters
-    ----------
-    x : pandas.DataFrame
-        DataFrame to export.
-
-    filename : str or Path, optional
-        Output filename. Automatically generated if None.
-
-    header : "auto", True, or False
-        "auto" : Automatically detect and correct headers.
-        True   : Preserve existing DataFrame column names.
-        False  : Export data without column names.
-
-    Returns
-    -------
-    pathlib.Path
-        Path to the exported CSV file.
-    """
-
-    # check inputs
     if not isinstance(x, pd.DataFrame):
         raise TypeError("Input must be a pandas DataFrame.")
+    if header != "auto" and type(header) is not bool:
+        raise ValueError("header must be 'auto', True, or False.")
 
-    if header not in ("auto", True, False):
-        raise ValueError(
-            "header must be 'auto', True, or False."
-        )
-
-    # generate filename
     if filename is None:
-        timestamp = datetime.datetime.now().strftime(
-            "%Y%m%d_%H%M%S"
-        )
-        filename = f"export_{timestamp}.csv"
-
+        filename = f"export_{datetime.datetime.now():%Y%m%d_%H%M%S}.csv"
     filename = Path(filename)
+    if filename.suffix.lower() != ".csv": filename = filename.with_suffix(".csv")
 
-    if filename.suffix.lower() != ".csv":
-        filename = filename.with_suffix(".csv")
-
-   # protect original dataframe
     df = x.copy()
+    default_cols = isinstance(df.columns, pd.RangeIndex) and df.columns.equals(pd.RangeIndex(df.shape[1]))
 
-    # detect pandas structure
-    has_default_columns = (
-        isinstance(df.columns, pd.RangeIndex)
-        and df.columns.equals(
-            pd.RangeIndex(df.shape[1])
-        )
-    )
-
-    #determine header behaviour
-    write_header = True
     if header == "auto":
-        if has_default_columns:
-            # suppress default integer headers
-            write_header = False
-
-            # check first row for header
-            if len(df) >= 2:
-                row_0_numeric = pd.to_numeric(df.iloc[0], errors="coerce")
-                row_1_numeric = pd.to_numeric(df.iloc[1], errors="coerce")
-                row_0_is_text = (row_0_numeric.isna().all())
-                row_1_has_numbers = (row_1_numeric.notna().any())
-
-                if (row_0_is_text and row_1_has_numbers):
-
-                    # promote first row to column name
-                    df.columns = df.iloc[0].astype(str)
-                    # remove promoted header
-                    df = df.iloc[1:].reset_index(drop=True)
-                    write_header = True
+        write_header = not default_cols
+        if default_cols and detect_header(df):
+            df.columns = df.iloc[0].astype(str)
+            df = df.iloc[1:].reset_index(drop=True)
+            write_header = True
     else:
-        # user input
         write_header = header
-        
-    df.to_csv(
-        filename,
-        index=False,
-        header=write_header
-    )
 
+    df.to_csv(filename, index=False, header=write_header)
     print(f"Successfully exported: {filename}")
-
     return filename
+
+def detect_header(df):
+    if len(df) < 2: return False
+    row0 = pd.to_numeric(df.iloc[0], errors="coerce")
+    row1 = pd.to_numeric(df.iloc[1], errors="coerce")
+    return row0.isna().all() and row1.notna().all()
 
 
 def copypaste():
-    sep = [',', ';', '|', '/','\\', r'\s+']
-    for i in sep:
-        try:
-            df = pd.read_clipboard(sep=i)
-            if df is not None:
-                break
-        except:
-            pass
+    text = pd.io.clipboard.clipboard_get().strip()
+    if not text: raise ValueError("Clipboard is empty.")
+
+    # Detect delimiter using multiple lines
+    sample = "\n".join(text.splitlines()[:10])
+    try:
+        sep = csv.Sniffer().sniff(sample, delimiters="\t,;|").delimiter
+    except csv.Error:
+        sep = r"\s+"
+
+    df = pd.read_csv(StringIO(text), sep=sep, header=None, engine="python")
+
+    if detect_header(df):
+        df.columns = df.iloc[0].astype(str)
+        df = df.iloc[1:].reset_index(drop=True)
+
     return df
 
 def plotarray(filename):
