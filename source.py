@@ -55,12 +55,6 @@ plt.rcParams['figure.dpi'] = 100 #default 100
 
 # data loading functions 
 
-def detect_header(df):
-    if len(df) < 2: return False
-    row0 = pd.to_numeric(df.iloc[0], errors="coerce")
-    row1 = pd.to_numeric(df.iloc[1], errors="coerce")
-    return row0.isna().all() and row1.notna().all()
-
 def loadexcel(filename = None):
     if filename == None:
         filename = input("Insert .csv filename here: ")
@@ -75,55 +69,28 @@ def loadexcel(filename = None):
             df = pd.read_csv(f"{filename}.csv")
         return df
 
-def saveexcel(x, filename=None, header="auto"):
-    if not isinstance(x, pd.DataFrame):
-        raise TypeError("Input must be a pandas DataFrame.")
-    
-    if header != "auto" and type(header) is not bool:
-        raise ValueError("header must be 'auto', True, or False.")
+import pandas as pd
+import datetime
 
+def saveexcel(x, filename=None):
     if filename is None:
-        filename = f"export_{datetime.datetime.now():%Y%m%d_%H%M%S}.csv"
-    filename = Path(filename)
-    
-    if not filename.name.lower().endswith(".csv"):
-        filename = Path(str(filename) + ".csv")
+        filename = f"export_{datetime.datetime.now():%Y%m%d_%H%M%S}"
+    if not filename.endswith(".csv"):
+        filename += ".csv"
+    return x.to_csv(filename, index=False)
 
-    df = x.copy()
-    default_cols = isinstance(df.columns, pd.RangeIndex) and df.columns.equals(pd.RangeIndex(df.shape[1]))
-
-    if header == "auto":
-        write_header = not default_cols
-        if default_cols and detect_header(df):
-            df.columns = df.iloc[0].astype(str)
-            df = df.iloc[1:].reset_index(drop=True)
-            write_header = True
-    else:
-        write_header = header
-
-    df.to_csv(filename, index=False, header=write_header)
-    print(f"Successfully exported: {filename}")
-    return filename
-
-def copypaste():
-    text = pd.io.clipboard.clipboard_get().strip()
-    if not text: raise ValueError("Clipboard is empty.")
-
-    # detect delimiter using a few lines
-    sample = "\n".join(text.splitlines()[:10])
-    try:
-        sep = csv.Sniffer().sniff(sample, delimiters="\t,;|").delimiter
-    except csv.Error:
-        sep = r"\s+"
-
-    df = pd.read_csv(StringIO(text), sep=sep, header=None, engine="python")
-
-    if detect_header(df):
-        df.columns = df.iloc[0].astype(str)
-        df = df.iloc[1:].reset_index(drop=True)
-
+def copypaste(header=None):
+    "Remember to input header = 0 if first row are headers."
+    sep = [',', ';', '|', '/', '\\', r'\s+']
+    for i in sep:
+        try:
+            df = pd.read_clipboard(sep=i, header=header)
+            if df is not None:
+                break
+        except:
+            pass
     return df
-
+    
 def plotarray(filename):
     intm = np.array(filename)
     return [intm[:, i] for i in range(intm.shape[1])]
