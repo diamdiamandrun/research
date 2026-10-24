@@ -3,23 +3,24 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 # standard bandstructure plotting
-def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None,titles=None):
+def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None, titles=None):
     
     # Set default color if not provided
     if colour is None:
         colour = 'b'
-    
+
     if plt.rcParams['figure.dpi'] == 100:
-        size='small'
+        size = 'small'
     elif plt.rcParams['figure.dpi'] > 100:
-        size='big'
-    
-    if size=='big':
-        font=20
+        size = 'big'
     else:
-        font=None
+        size = None
+    
+    if size == 'big':
+        font = 20
+    else:
+        font = None
 
     if tdos == 'On':
         try:
@@ -57,7 +58,7 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
         # create subplots
         fig, axes = plt.subplots(1, 2, figsize=(10, 5), gridspec_kw={'width_ratios': [2, 1]})
 
-        # band structure (left plot))
+        # band structure (left plot)
         axes[0].axhline(0, color='gray', linestyle='-', linewidth=0.5)
 
         if high_symm_points is not None and isinstance(high_symm_points, list):
@@ -69,30 +70,33 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
             axes[0].set_xticklabels(symm_points_name)
 
         for i in range(1, len(band)):
-            axes[0].plot(band[0], band[i], f'{colour}-', label=f'{material}')
+            # FIX: Prevent duplicate legend labels by only labelling the first line
+            axes[0].plot(band[0], band[i], f'{colour}-', label=f'{material}' if i == 1 else "")
+            
+        axes[0].legend(loc='best', fontsize=.6*font if font else None)
 
-        axes[0].set_xlabel('$k$-points',fontsize=font)
-        axes[0].set_ylabel('$E - E_F$ (eV)',fontsize=font)
+        axes[0].set_xlabel('$k$-points', fontsize=font)
+        axes[0].set_ylabel('$E - E_F$ (eV)', fontsize=font)
         axes[0].set_xlim(min(band[0]), max(band[0]))
 
         # total DOS (right plot)
-        axes[1].tick_params(left=False)  #hide y-axis ticks
-        axes[1].set_yticks([])  #remove y-axis labels
+        axes[1].tick_params(left=False)  # hide y-axis ticks
+        axes[1].set_yticks([])  # remove y-axis labels
         axes[1].plot(dos[1], dos[0], f'{colour}-')  
-        axes[1].set_xlabel('DOS (states eV$^{-1}$ cell$^{-1}$)',fontsize=font)
+        axes[1].set_xlabel('DOS (states eV$^{-1}$ cell$^{-1}$)', fontsize=font)
         axes[1].set_xlim(0)
         axes[1].axhline(0, color='gray', linestyle='-', linewidth=0.5)
 
         if type(yspan) != tuple:
-            yspan = (-1*yscale,yscale)
+            yspan = (-1*yscale, yscale)
         
         axes[0].set_ylim(yspan)
         axes[1].set_ylim(yspan)
         plt.tight_layout()
         
-        if titles=='On':
-            axes[0].set_title(f'Band Structure of {material}',fontsize=font)
-            axes[1].set_title("Total DOS",fontsize=font)
+        if titles == 'On':
+            axes[0].set_title(f'Band Structure of {material}', fontsize=font)
+            axes[1].set_title("Total DOS", fontsize=font)
 
         # turn on for bandgap analysis
         if sigma is not None:
@@ -111,51 +115,51 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
                             lumos.append(E)
                             lumosk.append(k)
             
-            #print(np.min(lumos) - np.max(homos),lumosk[np.argmin(lumos)]-homosk[np.argmax(homos)])
-            
-            # check for dirac points
-            if np.min(lumos) - np.max(homos) <= 10*sigma and lumosk[np.argmin(lumos)]-homosk[np.argmax(homos)] <= sigma:
-                axes[0].scatter(homosk[np.argmax(homos)],np.max(homos), marker = 'o', color = 'r')
-                axes[0].annotate(f"$k$ = {homosk[np.argmax(homos)]:.4f}", xy=[homosk[np.argmax(homos)] + 0.1, np.max(homos) + 0.4])
-                print(f'Dirac Point occurs at k = {homosk[np.argmax(homos)]}')
-
+            if not homos or not lumos:
+                print("Metallic system or no clear gap found within sigma tolerance.")
             else:
-                # encourage homo
-                dirEg, dirEgk, dirEgE = [], [], []
-                for i in range(len(homos)):
-                    k1 = homosk[i]
-                    for j in range(len(lumos)):
-                        k2 = lumosk[j]
-                        if k1 == k2 and homos[i] + sigma >= np.max(homos) and lumos[j] - sigma <= np.min(lumos):
-                            dirEg.append(lumos[j] - homos[i])
-                            dirEgk.append([homosk[i], lumosk[j]])
-                            dirEgE.append([homos[i], lumos[j]])
+                # FIX: Add abs() to k-point distance check to prevent false positives for Dirac points
+                if np.min(lumos) - np.max(homos) <= 10*sigma and abs(lumosk[np.argmin(lumos)] - homosk[np.argmax(homos)]) <= sigma:
+                    axes[0].scatter(homosk[np.argmax(homos)], np.max(homos), marker='o', color='r')
+                    axes[0].annotate(f"$k$ = {homosk[np.argmax(homos)]:.4f}", xy=[homosk[np.argmax(homos)] + 0.1, np.max(homos) + 0.4])
+                    print(f'Dirac Point occurs at k = {homosk[np.argmax(homos)]}')
 
-                # plot
-                if dirEg != []:
-                    x, y = dirEgk[np.argmin(dirEg)], dirEgE[np.argmin(dirEg)]
-                    #print(x, y)
-                    axes[0].scatter(x, y, marker='o', color='r')
-                    
-                    if size == None or size == "small":
-                        axes[0].annotate(f"({x[0]:.4f}, {y[0]:.4f})", xy=[x[0] + 0.01, y[0] + 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
-                        axes[0].annotate(f"({x[1]:.4f}, {y[1]:.4f})", xy=[x[1] + 0.01, y[1] - 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
-                    elif size == "big":
-                        axes[0].annotate(f"({x[0]:.4f}, {y[0]:.4f})", xy=[x[0] + 0.01, y[0] + 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale],fontsize=15)
-                        axes[0].annotate(f"({x[1]:.4f}, {y[1]:.4f})", xy=[x[1] + 0.01, y[1] - 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale],fontsize=15)
-                    print(f'The direct bandgap, $E_g$ = {np.min(dirEg):.3f} eV')
                 else:
-                    indirEgk = [homosk[np.argmax(homos)], lumosk[np.argmin(lumos)]]
-                    indirEgE = [np.max(homos), np.min(lumos)]
-                    axes[0].scatter(indirEgk, indirEgE, marker='o', color='r')
-                    
-                    if size is None or size == "small":
-                        axes[0].annotate(f"({indirEgk[0]:.4f},{indirEgE[0]:.4f})", xy=[indirEgk[0] + 0.01, indirEgE[0] + 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
-                        axes[0].annotate(f"({indirEgk[1]:.4f},{indirEgE[1]:.4f})", xy=[indirEgk[1] + 0.01, indirEgE[1] - 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
-                    elif size == "big":
-                        axes[0].annotate(f"({indirEgk[0]:.4f},{indirEgE[0]:.4f})", xy=[indirEgk[0] + 0.01, indirEgE[0] + 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale],fontsize=15)
-                        axes[0].annotate(f"({indirEgk[1]:.4f},{indirEgE[1]:.4f})", xy=[indirEgk[1] + 0.01, indirEgE[1] - 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale],fontsize=15)
-                    print(f'The indirect bandgap, $E_g$ = {indirEgE[1] - indirEgE[0]:.3f} eV')
+                    # encourage homo
+                    dirEg, dirEgk, dirEgE = [], [], []
+                    for i in range(len(homos)):
+                        k1 = homosk[i]
+                        for j in range(len(lumos)):
+                            k2 = lumosk[j]
+                            if k1 == k2 and homos[i] + sigma >= np.max(homos) and lumos[j] - sigma <= np.min(lumos):
+                                dirEg.append(lumos[j] - homos[i])
+                                dirEgk.append([homosk[i], lumosk[j]])
+                                dirEgE.append([homos[i], lumos[j]])
+
+                    # plot
+                    if dirEg: # FIX: Pythonic empty list check
+                        x, y = dirEgk[np.argmin(dirEg)], dirEgE[np.argmin(dirEg)]
+                        axes[0].scatter(x, y, marker='o', color='r')
+                        
+                        if size is None or size == "small":
+                            axes[0].annotate(f"({x[0]:.4f}, {y[0]:.4f})", xy=[x[0] + 0.01, y[0] + 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
+                            axes[0].annotate(f"({x[1]:.4f}, {y[1]:.4f})", xy=[x[1] + 0.01, y[1] - 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
+                        elif size == "big":
+                            axes[0].annotate(f"({x[0]:.4f}, {y[0]:.4f})", xy=[x[0] + 0.01, y[0] + 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale], fontsize=15)
+                            axes[0].annotate(f"({x[1]:.4f}, {y[1]:.4f})", xy=[x[1] + 0.01, y[1] - 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale], fontsize=15)
+                        print(f'The direct bandgap, $E_g$ = {np.min(dirEg):.3f} eV')
+                    else:
+                        indirEgk = [homosk[np.argmax(homos)], lumosk[np.argmin(lumos)]]
+                        indirEgE = [np.max(homos), np.min(lumos)]
+                        axes[0].scatter(indirEgk, indirEgE, marker='o', color='r')
+                        
+                        if size is None or size == "small":
+                            axes[0].annotate(f"({indirEgk[0]:.4f},{indirEgE[0]:.4f})", xy=[indirEgk[0] + 0.01, indirEgE[0] + 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
+                            axes[0].annotate(f"({indirEgk[1]:.4f},{indirEgE[1]:.4f})", xy=[indirEgk[1] + 0.01, indirEgE[1] - 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
+                        elif size == "big":
+                            axes[0].annotate(f"({indirEgk[0]:.4f},{indirEgE[0]:.4f})", xy=[indirEgk[0] + 0.01, indirEgE[0] + 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale], fontsize=15)
+                            axes[0].annotate(f"({indirEgk[1]:.4f},{indirEgE[1]:.4f})", xy=[indirEgk[1] + 0.01, indirEgE[1] - 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale], fontsize=15)
+                        print(f'The indirect bandgap, $E_g$ = {indirEgE[1] - indirEgE[0]:.3f} eV')
 
     elif tdos is None or tdos == 'Off':
         try:
@@ -184,20 +188,24 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
             for point in high_symm_points:
                 plt.axvline(point, color='gray', linestyle='-', linewidth=0.5)
         
-        plt.xticks(high_symm_points, symm_points_name)
+        if symm_points_name is not None:
+            plt.xticks(high_symm_points, symm_points_name)
 
         for i in range(1, len(band)):
-            plt.plot(band[0], band[i], f'{colour}-', label=f'{material}')
+            # FIX: Prevent duplicate legend labels
+            plt.plot(band[0], band[i], f'{colour}-', label=f'{material}' if i == 1 else "")
+            
+        plt.legend(loc='best', fontsize=.6*font if font else None)
 
-        if titles=='On':
-            plt.title(f'Band Structure of {material}',fontsize=font)
-        plt.xlabel('$k$-points',fontsize=font)
-        plt.ylabel('$E - E_F$ (eV)',fontsize=font)
+        if titles == 'On':
+            plt.title(f'Band Structure of {material}', fontsize=font)
+        plt.xlabel('$k$-points', fontsize=font)
+        plt.ylabel('$E - E_F$ (eV)', fontsize=font)
         plt.xlim(min(band[0]), max(band[0]))
         plt.tight_layout()
 
         if type(yspan) != tuple:
-            yspan = (-1*yscale,yscale)
+            yspan = (-1*yscale, yscale)
         
         plt.ylim(yspan)
 
@@ -218,54 +226,52 @@ def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_n
                             lumos.append(E)
                             lumosk.append(k)
             
-            #print(np.min(lumos) - np.max(homos),lumosk[np.argmin(lumos)]-homosk[np.argmax(homos)])
-            
-            # check for dirac points
-            if np.min(lumos) - np.max(homos) <= 10*sigma and lumosk[np.argmin(lumos)]-homosk[np.argmax(homos)] <= sigma:
-                plt.scatter(homosk[np.argmax(homos)],np.max(homos), marker = 'o', color = 'r')
-                plt.annotate(f"$k$ = {homosk[np.argmax(homos)]:.4f}", xy=[homosk[np.argmax(homos)] + 0.1, np.max(homos) + 0.4])
-                print(f'Dirac Point occurs at k = {homosk[np.argmax(homos)]}')
-
+            if not homos or not lumos:
+                print("Metallic system or no clear gap found within sigma tolerance.")
             else:
-                # encourage homo
-                dirEg, dirEgk, dirEgE = [], [], []
-                for i in range(len(homos)):
-                    k1 = homosk[i]
-                    for j in range(len(lumos)):
-                        k2 = lumosk[j]
-                        if k1 == k2 and homos[i] + sigma >= np.max(homos) and lumos[j] - sigma <= np.min(lumos):
-                            dirEg.append(lumos[j] - homos[i])
-                            dirEgk.append([homosk[i], lumosk[j]])
-                            dirEgE.append([homos[i], lumos[j]])
+                if np.min(lumos) - np.max(homos) <= 10*sigma and abs(lumosk[np.argmin(lumos)] - homosk[np.argmax(homos)]) <= sigma:
+                    plt.scatter(homosk[np.argmax(homos)], np.max(homos), marker='o', color='r')
+                    plt.annotate(f"$k$ = {homosk[np.argmax(homos)]:.4f}", xy=[homosk[np.argmax(homos)] + 0.1, np.max(homos) + 0.4])
+                    print(f'Dirac Point occurs at k = {homosk[np.argmax(homos)]}')
 
-                # plot
-                if dirEg != []:
-                    x, y = dirEgk[np.argmin(dirEg)], dirEgE[np.argmin(dirEg)]
-                    #print(x, y)
-                    plt.scatter(x, y, marker='o', color='r')
-                    
-                    if size == None or size == "small":
-                        plt.annotate(f"({x[0]:.4f}, {y[0]:.4f})", xy=[x[0] + 0.01, y[0] + 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
-                        plt.annotate(f"({x[1]:.4f}, {y[1]:.4f})", xy=[x[1] + 0.01, y[1] - 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
-                    elif size == "big":
-                        plt.annotate(f"({x[0]:.4f}, {y[0]:.4f})", xy=[x[0] + 0.01, y[0] + 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale],fontsize=15)
-                        plt.annotate(f"({x[1]:.4f}, {y[1]:.4f})", xy=[x[1] + 0.01, y[1] - 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale],fontsize=15)
-                    print(f'The direct bandgap, $E_g$ = {np.min(dirEg):.3f} eV')
                 else:
-                    indirEgk = [homosk[np.argmax(homos)], lumosk[np.argmin(lumos)]]
-                    indirEgE = [np.max(homos), np.min(lumos)]
-                    plt.scatter(indirEgk, indirEgE, marker='o', color='r')
-                    
-                    if size is None or size == "small":
-                        plt.annotate(f"({indirEgk[0]:.4f},{indirEgE[0]:.4f})", xy=[indirEgk[0] + 0.01, indirEgE[0] + 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
-                        plt.annotate(f"({indirEgk[1]:.4f},{indirEgE[1]:.4f})", xy=[indirEgk[1] + 0.01, indirEgE[1] - 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
-                    elif size == "big":
-                        plt.annotate(f"({indirEgk[0]:.4f},{indirEgE[0]:.4f})", xy=[indirEgk[0] + 0.01, indirEgE[0] + 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale],fontsize=15)
-                        plt.annotate(f"({indirEgk[1]:.4f},{indirEgE[1]:.4f})", xy=[indirEgk[1] + 0.01, indirEgE[1] - 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale],fontsize=15)
-                    print(f'The indirect bandgap, $E_g$ = {indirEgE[1] - indirEgE[0]:.3f} eV')
+                    # encourage homo
+                    dirEg, dirEgk, dirEgE = [], [], []
+                    for i in range(len(homos)):
+                        k1 = homosk[i]
+                        for j in range(len(lumos)):
+                            k2 = lumosk[j]
+                            if k1 == k2 and homos[i] + sigma >= np.max(homos) and lumos[j] - sigma <= np.min(lumos):
+                                dirEg.append(lumos[j] - homos[i])
+                                dirEgk.append([homosk[i], lumosk[j]])
+                                dirEgE.append([homos[i], lumos[j]])
+
+                    # plot
+                    if dirEg: # FIX: Pythonic empty list check
+                        x, y = dirEgk[np.argmin(dirEg)], dirEgE[np.argmin(dirEg)]
+                        plt.scatter(x, y, marker='o', color='r')
+                        
+                        if size is None or size == "small":
+                            plt.annotate(f"({x[0]:.4f}, {y[0]:.4f})", xy=[x[0] + 0.01, y[0] + 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
+                            plt.annotate(f"({x[1]:.4f}, {y[1]:.4f})", xy=[x[1] + 0.01, y[1] - 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
+                        elif size == "big":
+                            plt.annotate(f"({x[0]:.4f}, {y[0]:.4f})", xy=[x[0] + 0.01, y[0] + 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale], fontsize=15)
+                            plt.annotate(f"({x[1]:.4f}, {y[1]:.4f})", xy=[x[1] + 0.01, y[1] - 0.03 * (plt.ylim()[1] - plt.ylim()[0])/yscale], fontsize=15)
+                        print(f'The direct bandgap, $E_g$ = {np.min(dirEg):.3f} eV')
+                    else:
+                        indirEgk = [homosk[np.argmax(homos)], lumosk[np.argmin(lumos)]]
+                        indirEgE = [np.max(homos), np.min(lumos)]
+                        plt.scatter(indirEgk, indirEgE, marker='o', color='r')
+                        
+                        if size is None or size == "small":
+                            plt.annotate(f"({indirEgk[0]:.4f},{indirEgE[0]:.4f})", xy=[indirEgk[0] + 0.01, indirEgE[0] + 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
+                            plt.annotate(f"({indirEgk[1]:.4f},{indirEgE[1]:.4f})", xy=[indirEgk[1] + 0.01, indirEgE[1] - 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale])
+                        elif size == "big":
+                            plt.annotate(f"({indirEgk[0]:.4f},{indirEgE[0]:.4f})", xy=[indirEgk[0] + 0.01, indirEgE[0] + 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale], fontsize=15)
+                            plt.annotate(f"({indirEgk[1]:.4f},{indirEgE[1]:.4f})", xy=[indirEgk[1] + 0.01, indirEgE[1] - 0.3 * (plt.ylim()[1] - plt.ylim()[0])/yscale], fontsize=15)
+                        print(f'The indirect bandgap, $E_g$ = {indirEgE[1] - indirEgE[0]:.3f} eV')
 
     if saveformat is not None:
-        import os
         if not os.path.exists('00_Plots'):
             os.makedirs('00_Plots')
         plt.savefig(f'00_Plots/{filename}.{saveformat}', bbox_inches='tight')
