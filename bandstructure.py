@@ -1,4 +1,8 @@
+import os
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+
 
 # standard bandstructure plotting
 def bandstructure(tdos=None, filename=None, high_symm_points=None, symm_points_name=None, material=None, colour=None, sigma=None, yscale=15, yspan=None, saveformat=None,titles=None):
