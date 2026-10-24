@@ -55,6 +55,12 @@ plt.rcParams['figure.dpi'] = 100 #default 100
 
 # data loading functions 
 
+def detect_header(df):
+    if len(df) < 2: return False
+    row0 = pd.to_numeric(df.iloc[0], errors="coerce")
+    row1 = pd.to_numeric(df.iloc[1], errors="coerce")
+    return row0.isna().all() and row1.notna().all()
+
 def loadexcel(filename = None):
     if filename == None:
         filename = input("Insert .csv filename here: ")
@@ -95,13 +101,6 @@ def saveexcel(x, filename=None, header="auto"):
     df.to_csv(filename, index=False, header=write_header)
     print(f"Successfully exported: {filename}")
     return filename
-
-def detect_header(df):
-    if len(df) < 2: return False
-    row0 = pd.to_numeric(df.iloc[0], errors="coerce")
-    row1 = pd.to_numeric(df.iloc[1], errors="coerce")
-    return row0.isna().all() and row1.notna().all()
-
 
 def copypaste():
     text = pd.io.clipboard.clipboard_get().strip()
