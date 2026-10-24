@@ -78,13 +78,16 @@ def loadexcel(filename = None):
 def saveexcel(x, filename=None, header="auto"):
     if not isinstance(x, pd.DataFrame):
         raise TypeError("Input must be a pandas DataFrame.")
+    
     if header != "auto" and type(header) is not bool:
         raise ValueError("header must be 'auto', True, or False.")
 
     if filename is None:
         filename = f"export_{datetime.datetime.now():%Y%m%d_%H%M%S}.csv"
     filename = Path(filename)
-    if filename.suffix.lower() != ".csv": filename = filename.with_suffix(".csv")
+    
+    if not filename.name.lower().endswith(".csv"):
+        filename = Path(str(filename) + ".csv")
 
     df = x.copy()
     default_cols = isinstance(df.columns, pd.RangeIndex) and df.columns.equals(pd.RangeIndex(df.shape[1]))
@@ -106,7 +109,7 @@ def copypaste():
     text = pd.io.clipboard.clipboard_get().strip()
     if not text: raise ValueError("Clipboard is empty.")
 
-    # Detect delimiter using multiple lines
+    # detect delimiter using a few lines
     sample = "\n".join(text.splitlines()[:10])
     try:
         sep = csv.Sniffer().sniff(sample, delimiters="\t,;|").delimiter
