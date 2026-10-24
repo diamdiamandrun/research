@@ -1,4 +1,5 @@
 # data loading functions 
+from imports import *
 
 def loadexcel(filename = None):
     if filename == None:
