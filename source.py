@@ -5,6 +5,9 @@ from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
 import matplotlib.pyplot as plt
 import os
+import datetime
+from pathlib import Path
+
 # Set all text elements to use 'Times New Roman' as the font
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
@@ -63,12 +66,6 @@ def loadexcel(filename = None):
         else:
             df = pd.read_csv(f"{filename}.csv")
         return df
-
-
-import pandas as pd
-import datetime
-from pathlib import Path
-
 
 def saveexcel(x, filename=None, header="auto"):
     """
