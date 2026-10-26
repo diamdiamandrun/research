@@ -46,4 +46,4 @@ def yamaguchi(mode=None, e_ls=None, e_hs=None, s2_ls=None, s2_hs=None, s2_pure=0
         else:
             print(f"Check your inputs! For '{mode}' mode, n_hono & n_luno are required!")
     else:
-        print('Unrecognized mode! Available modes include "gap", "gap ev", and "y_n".')
+        print('Unrecognised mode! Available modes include "gap", "gap ev", and "y_n".')
